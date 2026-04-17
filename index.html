@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>面接官トレーニングゲーム</title>
+  <style>
+    :root {
+      --bg: #f7f9fc;
+      --card: #ffffff;
+      --line: #d7deea;
+      --text: #1f2937;
+      --muted: #5b667f;
+      --accent: #3b5bdb;
+      --ok: #0f9d58;
+      --ng: #d93025;
+      --next: #6b7280;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 24px auto;
+      padding: 0 14px 24px;
+    }
+
+    h1 { margin: 0 0 8px; font-size: 30px; }
+
+    .sub {
+      margin: 0 0 14px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: end;
+    }
+
+    .field { min-width: 160px; flex: 1; }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    select, textarea, button {
+      width: 100%;
+      font: inherit;
+      border-radius: 10px;
+    }
+
+    select, textarea {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      padding: 10px 12px;
+    }
+
+    textarea { min-height: 90px; resize: vertical; }
+
+    button {
+      border: none;
+      padding: 11px 12px;
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .start { background: var(--accent); }
+    .ok { background: var(--ok); }
+    .ng { background: var(--ng); }
+    .next { background: var(--next); }
+
+    .progress {
+      margin-top: 10px;
+      height: 10px;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: #edf1fa;
+    }
+
+    .progress > div {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #3b5bdb, #6b8bff);
+      transition: width 0.25s;
+    }
+
+    .status {
+      margin-top: 8px;
+      min-height: 20px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .meta {
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .question {
+      border-left: 4px solid var(--accent);
+      background: #eef3ff;
+      border-radius: 9px;
+      padding: 10px;
+      margin-bottom: 10px;
+      line-height: 1.6;
+      font-weight: 700;
+    }
+
+    .answer {
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      padding: 12px;
+      min-height: 110px;
+      white-space: pre-wrap;
+      line-height: 1.7;
+      background: #fff;
+    }
+
+    .actions {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(110px, 1fr));
+      gap: 8px;
+    }
+
+    .hidden { display: none !important; }
+
+    .result-item {
+      border-top: 1px solid var(--line);
+      padding: 8px 0;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .pill {
+      display: inline-block;
+      border-radius: 999px;
+      font-size: 12px;
+      color: #fff;
+      padding: 2px 8px;
+      margin-left: 6px;
+    }
+
+    .pill.ok { background: var(--ok); }
+    .pill.ng { background: var(--ng); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>面接官トレーニングゲーム</h1>
+    <p class="sub">候補者の回答を見て「採用！ / 不採用」を判定してください。最後にあなたの面接官傾向を可視化します。</p>
+
+    <section class="panel">
+      <div class="row">
+        <div class="field">
+          <label for="roundCount">問題数</label>
+          <select id="roundCount">
+            <option value="3">3</option>
+            <option value="5" selected>5</option>
+            <option value="7">7</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>&nbsp;</label>
+          <button id="startBtn" class="start">ゲーム開始</button>
+        </div>
+      </div>
+      <div class="progress"><div id="progressBar"></div></div>
+      <div class="status" id="status">ゲーム開始を押してください。</div>
+    </section>
+
+    <section class="panel">
+      <div class="meta" id="meta">テーマ: -</div>
+      <div class="question" id="question">質問文がここに表示されます。</div>
+      <div class="answer" id="answer">準備中です。</div>
+
+      <div class="actions">
+        <button id="okBtn" class="ok hidden">採用！</button>
+        <button id="ngBtn" class="ng hidden">不採用</button>
+        <button id="nextBtn" class="next hidden">次の候補者</button>
+      </div>
+
+      <div style="margin-top:10px;">
+        <label for="memo">評価メモ（任意）</label>
+        <textarea id="memo" placeholder="例：主体性は高いが再現性の説明が弱い"></textarea>
+      </div>
+    </section>
+
+    <section class="panel hidden" id="resultPanel">
+      <h3 style="margin:0 0 8px;">結果</h3>
+      <div id="score"></div>
+      <div id="bias"></div>
+      <div id="log"></div>
+      <button id="restartBtn" class="start" style="max-width:220px; margin-top:8px;">もう一度遊ぶ</button>
+    </section>
+  </div>
+
+  <script>
+    const candidates = [
+      {
+        theme: "成果",
+        question: "前職で最も成果を出した取り組みについて、再現可能な形で説明してください。",
+        answer: "受注後の手続きフローを見直し、承認プロセスを標準化しました。その結果、処理リードタイムを約30%短縮できました。手順書も更新し、担当者が変わっても同じ品質で運用できる状態にしました。",
+        truth: "OK",
+        trait: "成果を仕組みに落とし込める"
+      },
+      {
+        theme: "成果",
+        question: "前職で最も成果を出した取り組みについて、再現可能な形で説明してください。",
+        answer: "複数案件に関与し、成果を上げ続けて来ました。気合いがあれば何でもできます。なので、どんな環境でも再現可能です。",
+        truth: "NG",
+        trait: "定量性と再現性が乏しい"
+      },
+      {
+        theme: "失敗対応",
+        question: "業務上の失敗をどのように振り返り、再発防止につなげましたか？",
+        answer: "納期遅延を発生させた際、原因を工程ごとに分解してボトルネックを特定しました。以後は見積りレビューを必須化し、同種案件での遅延発生率を抑えました。",
+        truth: "OK",
+        trait: "再発防止の視点がある"
+      },
+      {
+        theme: "失敗対応",
+        question: "業務上の失敗をどのように振り返り、再発防止につなげましたか？",
+        answer: "失敗は一定数発生するものなので、過度に振り返りすぎないようにしています。次の案件で、気合いで挽回するだけです。",
+        truth: "NG",
+        trait: "学習サイクルが弱い"
+      },
+      {
+        theme: "協働",
+        question: "関係者と意見が対立した場合、どのように合意形成しますか？",
+        answer: "まず判断基準を共通化し、論点を事実ベースで整理します。その上で選択肢ごとのメリット・リスクを比較し、決定理由を文書で共有するようにしています。",
+        truth: "OK",
+        trait: "合意形成が体系的"
+      },
+      {
+        theme: "協働",
+        question: "関係者と意見が対立した場合、どのように合意形成しますか？",
+        answer: "意見が割れた場合は、声が大きい人の判断に合わせることが多いです。権力者に媚びへつらって、自分の意見を平気で変えます。。",
+        truth: "NG",
+        trait: "合意形成の質に課題"
+      },
+      {
+        theme: "学習",
+        question: "未経験の領域を担当する際、どのようにキャッチアップしますか？",
+        answer: "目的に直結する範囲を優先して学習計画を作成し、短いサイクルで実装とレビューを回します。理解が浅い点は早めに周囲へ確認し、手戻りを最小化します。",
+        truth: "OK",
+        trait: "学習計画と実行が両立"
+      },
+      {
+        theme: "学習",
+        question: "未経験の領域を担当する際、どのようにキャッチアップしますか？",
+        answer: "まず触ってみて、必要になった時に調べる方針です。事前準備に時間を使いすぎるより、実務に入りながら覚えることを重視しています。",
+        truth: "NG",
+        trait: "計画性が不足"
+      },
+      {
+        theme: "顧客対応",
+        question: "顧客から厳しい指摘を受けた場合の初動を教えてください。",
+        answer: "まずご指摘内容を正確に受け止め、事実関係と影響範囲を即時に確認します。一次報告の期限を明示したうえで、再発防止策まで含めてご説明します。",
+        truth: "OK",
+        trait: "初動が迅速で誠実"
+      },
+      {
+        theme: "顧客対応",
+        question: "顧客から厳しい指摘を受けた場合の初動を教えてください。",
+        answer: "感情的な場面では、まず時間を置いて落ち着いてから対応することが多いです。状況が整理されてから必要な範囲で対応します。",
+        truth: "NG",
+        trait: "初動遅延のリスク"
+      },
+      {
+        theme: "優先順位",
+        question: "複数業務が同時に逼迫したとき、優先順位をどう決めますか？",
+        answer: "事業インパクト、納期、依存関係、リスクを軸に優先順位を判断します。判断理由を関係者へ共有し、後続の見直しができる状態を維持します。",
+        truth: "OK",
+        trait: "判断基準が明確"
+      },
+      {
+        theme: "優先順位",
+        question: "複数業務が同時に逼迫したとき、優先順位をどう決めますか？",
+        answer: "その時点で強く依頼されているものから着手することが多いです。優先順位の根拠は実務上あまり明文化していません。",
+        truth: "NG",
+        trait: "判断の再現性が低い"
+      },
+      {
+        theme: "倫理",
+        question: "不適切な依頼を受けた際、どのように行動しますか？",
+        answer: "まず事実確認を行い、社内規程と法令に照らして妥当性を判断します。必要に応じて上長・コンプライアンス窓口へ相談し、経緯を記録します。",
+        truth: "OK",
+        trait: "コンプライアンス意識が高い"
+      },
+      {
+        theme: "倫理",
+        question: "不適切な依頼を受けた際、どのように行動しますか？",
+        answer: "上位者の指示であれば、まずは遂行を優先します。問題化した場合に調整する方が現実的だと考えています。",
+        truth: "NG",
+        trait: "倫理判断が受動的"
+      },
+      {
+        theme: "報連相",
+        question: "業務が計画通り進まない場合、どのタイミングでどのように報告しますか？",
+        answer: "遅延見込みが判明した時点で、影響範囲と対応案を添えて共有します。単なる遅延報告ではなく、代替案を同時に提示することを徹底しています。",
+        truth: "OK",
+        trait: "報告の質が高い"
+      },
+      {
+        theme: "報連相",
+        question: "業務が計画通り進まない場合、どのタイミングでどのように報告しますか？",
+        answer: "ある程度状況が固まってから報告するようにしています。中途半端な段階で共有すると、かえって混乱を招くと考えています。",
+        truth: "NG",
+        trait: "共有のタイミングが遅い"
+      },
+      {
+        theme: "改善",
+        question: "現行業務の非効率を見つけた場合、どのように改善しますか？",
+        answer: "現状の工数を可視化したうえで改善仮説を立て、小規模検証を実施します。効果が確認できた施策のみ標準運用へ展開します。",
+        truth: "OK",
+        trait: "改善を検証ベースで進める"
+      },
+      {
+        theme: "改善",
+        question: "現行業務の非効率を見つけた場合、どのように改善しますか？",
+        answer: "まずは自分の担当範囲だけ効率化できれば十分だと思っています。全体最適は時間がかかるため、優先度は高くありません。",
+        truth: "NG",
+        trait: "視野が局所的"
+      }
+    ];
+
+    const state = {
+      roundCount: 5,
+      round: 0,
+      list: [],
+      current: null,
+      records: [],
+      phase: "idle"
+    };
+
+    const ui = {
+      roundCount: document.getElementById("roundCount"),
+      startBtn: document.getElementById("startBtn"),
+      okBtn: document.getElementById("okBtn"),
+      ngBtn: document.getElementById("ngBtn"),
+      nextBtn: document.getElementById("nextBtn"),
+      restartBtn: document.getElementById("restartBtn"),
+      question: document.getElementById("question"),
+      answer: document.getElementById("answer"),
+      memo: document.getElementById("memo"),
+      status: document.getElementById("status"),
+      meta: document.getElementById("meta"),
+      progressBar: document.getElementById("progressBar"),
+      resultPanel: document.getElementById("resultPanel"),
+      score: document.getElementById("score"),
+      bias: document.getElementById("bias"),
+      log: document.getElementById("log")
+    };
+
+    function shuffle(array) {
+      const copied = [...array];
+      for (let i = copied.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copied[i], copied[j]] = [copied[j], copied[i]];
+      }
+      return copied;
+    }
+
+    function updateProgress() {
+      const done = Math.max(0, state.round - 1);
+      const pct = Math.round((done / Math.max(1, state.roundCount)) * 100);
+      ui.progressBar.style.width = `${pct}%`;
+    }
+
+    function renderCurrent() {
+      if (!state.current) return;
+      ui.meta.textContent = `テーマ: ${state.current.theme}`;
+      ui.question.textContent = state.current.question;
+      ui.answer.textContent = state.current.answer;
+      ui.memo.value = "";
+      ui.status.textContent = `Round ${state.round} / ${state.roundCount}`;
+
+      ui.okBtn.classList.remove("hidden");
+      ui.ngBtn.classList.remove("hidden");
+      ui.nextBtn.classList.add("hidden");
+      state.phase = "judging";
+    }
+
+    function startGame() {
+      state.roundCount = Number(ui.roundCount.value);
+      state.round = 1;
+      state.records = [];
+      state.list = shuffle(candidates).slice(0, state.roundCount);
+      state.current = state.list[0] || null;
+      state.phase = "judging";
+
+      ui.resultPanel.classList.add("hidden");
+      ui.startBtn.classList.add("hidden");
+      updateProgress();
+      renderCurrent();
+    }
+
+    function judge(decision) {
+      if (state.phase !== "judging" || !state.current) return;
+
+      const correct = decision === state.current.truth;
+
+      state.records.push({
+        round: state.round,
+        theme: state.current.theme,
+        decision,
+        truth: state.current.truth,
+        correct,
+        trait: state.current.trait,
+        memo: ui.memo.value.trim()
+      });
+
+      ui.okBtn.classList.add("hidden");
+      ui.ngBtn.classList.add("hidden");
+
+      if (state.round < state.roundCount) {
+        ui.status.textContent = correct ? "判定は妥当です。" : "判定にズレがありました。";
+        ui.nextBtn.classList.remove("hidden");
+        state.phase = "next";
+      } else {
+        finishGame();
+      }
+    }
+
+    function nextRound() {
+      if (state.phase !== "next") return;
+
+      state.round += 1;
+      state.current = state.list[state.round - 1] || null;
+      updateProgress();
+      renderCurrent();
+    }
+
+    function finishGame() {
+      state.phase = "finished";
+      ui.progressBar.style.width = "100%";
+
+      const total = state.records.length;
+      const correctCount = state.records.filter(r => r.correct).length;
+      const passCount = state.records.filter(r => r.decision === "OK").length;
+      const overReject = state.records.filter(r => r.truth === "OK" && r.decision === "NG").length;
+      const overAccept = state.records.filter(r => r.truth === "NG" && r.decision === "OK").length;
+
+      let tendency = "バランス型";
+      if (passCount / Math.max(total, 1) < 0.4) tendency = "やや厳しめ";
+      if (passCount / Math.max(total, 1) > 0.6) tendency = "やや甘め";
+
+      ui.score.innerHTML = `<p><strong>正解数:</strong> ${correctCount} / ${total}</p>`;
+      ui.bias.innerHTML = `<p><strong>面接官傾向:</strong> ${tendency}<br>優秀人材を落とした回数: ${overReject} / 要注意人材を通した回数: ${overAccept}</p>`;
+
+      ui.log.innerHTML = state.records.map((r) => {
+        const cls = r.truth === "OK" ? "ok" : "ng";
+        return `
+          <div class="result-item">
+            <div>
+              <strong>Round ${r.round}</strong>（${r.theme}） / あなたの判定: ${r.decision}
+              <span class="pill ${cls}">実際は ${r.truth === "OK" ? "採用寄り" : "不採用寄り"}</span>
+            </div>
+            <div>候補者の特徴: ${r.trait}</div>
+            ${r.memo ? `<div>メモ: ${r.memo}</div>` : ""}
+          </div>
+        `;
+      }).join("");
+
+      ui.resultPanel.classList.remove("hidden");
+      ui.status.textContent = "ゲーム終了。結果をご確認ください。";
+      ui.nextBtn.classList.add("hidden");
+      ui.startBtn.classList.remove("hidden");
+      ui.startBtn.textContent = "新しいゲームを開始";
+    }
+
+    ui.startBtn.addEventListener("click", startGame);
+    ui.okBtn.addEventListener("click", () => judge("OK"));
+    ui.ngBtn.addEventListener("click", () => judge("NG"));
+    ui.nextBtn.addEventListener("click", nextRound);
+    ui.restartBtn.addEventListener("click", startGame);
+  </script>
+</body>
+</html>
